@@ -14,7 +14,7 @@ Your goal is to move it toward an engineering solution that is **buildable, deli
 
 - The suggested effort is **2–3 hours**, not a hard limit. You may spend more time; record your actual time, unfinished work, and next steps honestly in `deploy/NOTES.md`.
 - The assignment does not provide every detail of a production environment. When information is missing, record the key assumptions you need and continue; you do not need to wait for the interviewer to provide a single correct answer.
-- Tasks 1–4 are parallel evaluation dimensions, and you may choose the order. Steps 3A–3C are only the internal validation sequence for the observability task.
+- Tasks 1–5 are parallel evaluation dimensions, and you may choose the order. Steps 3A–3C are only the internal validation sequence for the observability task.
 - You may use ChatGPT, Claude, Copilot, Cursor, or other tools, but you must be able to explain, run, and modify every part of your submission.
 - You do not need to purchase cloud resources. The deployment target may be a local or remote environment that you can demonstrate.
 - No specific tool or implementation is required. Any approach is acceptable if it satisfies the behavioral constraints below and you can explain your choices.
@@ -34,7 +34,8 @@ Your goal is to move it toward an engineering solution that is **buildable, deli
 ├── docker-compose.yml
 ├── .github/workflows/ci.yml
 ├── monitoring/prometheus.yml
-└── deploy/NOTES.md
+├── deploy/NOTES.md
+└── deploy/COST.md
 ```
 
 Local baseline:
@@ -136,6 +137,30 @@ Complete `deploy/NOTES.md`. It is not a generic DevOps questionnaire; it is an e
 
 Reference actual files, jobs, commands, or runtime results. Avoid generic statements such as “in production, we should…”. Keep it concise; for the English version, aim for no more than roughly 1,000 words, equivalent to the Chinese version’s 1,500-character guideline.
 
+## Task 5: Cost Scenario Analysis
+
+> This is a **scenario analysis** task. It requires no code and no cloud purchases. Write your analysis in `deploy/COST.md` (aim for no more than ~600 words). **If you can obtain the data, give concrete numbers and queries; if you cannot, state your key assumptions, what data you would use to verify them, and how your conclusion would change if they do not hold.** We care about both your conclusion and your reasoning.
+
+Imagine the `task-api` from Tasks 1–4 as one part of a larger production system. The system also has a high-write user-event table `user_event`: it is written to **DynamoDB**, its data is backed up/synced to an **S3** data-lake bucket, downstream services on **EKS** consume the events, and outbound traffic goes through **ELB**. The app recently shipped a major revision, and the client request logic changed with it. Afterward:
+
+- the monthly **AWS bill rose about 30% month over month** (illustrative: ~$40k → ~$52k);
+- over the same period, **business volume (DAU / core request volume) grew only about 5%**;
+- the increase is not confined to one service; it is **spread across DynamoDB, S3, EKS compute, and ELB egress**;
+- you have access to: Cost Explorer, an exportable CUR (Cost and Usage Report), roughly 60% of resources tagged with `team` / `env`, CloudWatch metrics, and the service metrics you built in Task 3;
+- Finance and your leader want two answers: **why did it rise**, and **can we bring it down next month, and how**.
+
+**In `deploy/COST.md`, provide:**
+
+- **Baseline judgment:** which data do you look at first to decide whether this increase is "normal"? How do you separate "usage growth" from "efficiency loss / waste"? What unit do you measure by (for example, unit cost per event / request / DAU)?
+- **Attribution approach:** give one "observe → hypothesize → verify with which data" chain that breaks the 30% increase down to specific sources. Cover at least: which dimensions you split by first (service / usage type / account / region / tag) and how you attribute the untagged ~40% of resources; when the increase is spread across services, how you decide whether they share a **common root cause**; and the confounders you rule out at each step (billing-period day count, RI/SP amortization, one-off charges).
+- **Governance and trade-offs:** pick one constraint and give a concrete first step, an alternative, and what you give up — (1) you want to use commitment discounts (RI / Savings Plans) or reserved capacity to cut cost, but this event table is **scheduled to migrate to a different store next quarter**; (2) the root cause is the post-revision request/write logic, and **reducing it at the source needs the APP team, who are fully booked this quarter**; (3) last month you predicted the cost would drop, but this month it hit a **new high** (your point optimizations were outweighed by growth at the source) — how do you **manage expectations honestly** with your leader.
+- **Evidence from experience (optional but encouraged):** if you have done a real cost optimization, describe the before/after result in one or two sentences and how you confirmed the improvement actually came from your change.
+
+**Behavioral constraints:**
+
+- Conclusions must land on "which data, verified how"; avoid a generic checklist such as "shut down idle resources / buy RIs / add a lifecycle policy" — for the same action, explain **why you judge it applies to this scenario**;
+- Distinguish a "one-off point optimization" from "root-cause governance / a durable mechanism," and explain how you would prevent the cost from creeping back.
+
 ## Core Acceptance Checklist
 
 - [ ] The original Go tests pass, with no data races;
@@ -145,7 +170,8 @@ Reference actual files, jobs, commands, or runtime results. Avoid generic statem
 - [ ] the Prometheus target is `UP`, and the Grafana Dashboard contains real data;
 - [ ] metrics can answer questions about traffic, errors, latency percentiles, and task state;
 - [ ] the Dashboard has been validated with actual business traffic, actual results have been compared with expectations, and at least one signal has been confirmed further;
-- [ ] `deploy/NOTES.md` references real evidence from this submission.
+- [ ] `deploy/NOTES.md` references real evidence from this submission;
+- [ ] `deploy/COST.md` attributes the cost increase to evidence or explicit assumptions, states a governance trade-off, and separates point optimizations from root-cause governance.
 
 ## Evaluation Focus
 
@@ -157,6 +183,7 @@ Reference actual files, jobs, commands, or runtime results. Avoid generic statem
 | Delivery safety | Whether permissions, credentials, publication conditions, and artifact traceability are reasonable |
 | Observability | Whether metrics and the Dashboard actually support decisions and troubleshooting |
 | Prioritization | Whether you prioritize the highest-value closed loops within the time you actually invest |
+| Cost judgment | Whether you show unit-cost awareness, attribute the increase to evidence, separate point fixes from root-cause governance, and make an actionable trade-off under constraints |
 
 ## Optional Bonus
 
