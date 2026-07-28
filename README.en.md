@@ -141,11 +141,12 @@ Reference actual files, jobs, commands, or runtime results. Avoid generic statem
 
 > This is a **scenario analysis** task. It requires no code and no cloud purchases. Write your analysis in `deploy/COST.md` (aim for no more than ~600 words). **If you can obtain the data, give concrete numbers and queries; if you cannot, state your key assumptions, what data you would use to verify them, and how your conclusion would change if they do not hold.** We care about both your conclusion and your reasoning.
 
-Imagine the `task-api` from Tasks 1–4 as one part of a larger production system. The system also has a high-write user-event table `user_event`: it is written to **DynamoDB**, its data is backed up/synced to an **S3** data-lake bucket, downstream services on **EKS** consume the events, and outbound traffic goes through **ELB**. The app recently shipped a major revision, and the client request logic changed with it. Afterward:
+Imagine the `task-api` from Tasks 1–4 as one part of a larger production system. The system also has a high-write user-event table `user_event`: it is written to **DynamoDB**, its data is backed up/synced to an **S3** data-lake bucket (that same bucket is also read by downstream data jobs — EMR / queries), downstream services on **EKS** consume the events, and outbound traffic goes through **ELB**. The app recently shipped a major revision, and the client request logic changed with it. Afterward:
 
-- the monthly **AWS bill rose about 30% month over month** (illustrative: ~$40k → ~$52k);
+- the monthly **AWS bill rose about 30% month over month** (illustrative: ~$40k → ~$52k, unblended cost; last month had 31 days, this month 30);
 - over the same period, **business volume (DAU / core request volume) grew only about 5%**;
-- the increase is not confined to one service; it is **spread across DynamoDB, S3, EKS compute, and ELB egress**;
+- the increase is **spread across DynamoDB, S3, EKS compute, and ELB egress** — at first glance, part of it tracks the write-volume growth, and part of it is not proportional to usage;
+- a batch of RIs / Savings Plans was purchased at the start of this quarter;
 - you have access to: Cost Explorer, an exportable CUR (Cost and Usage Report), roughly 60% of resources tagged with `team` / `env`, CloudWatch metrics, and the service metrics you built in Task 3;
 - Finance and your leader want two answers: **why did it rise**, and **can we bring it down next month, and how**.
 
