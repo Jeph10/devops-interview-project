@@ -139,28 +139,18 @@ Reference actual files, jobs, commands, or runtime results. Avoid generic statem
 
 ## Task 5: Cost Scenario Analysis
 
-> This is a **scenario analysis** task. It requires no code and no cloud purchases. Write your analysis in `deploy/COST.md` (aim for no more than ~600 words). **If you can obtain the data, give concrete numbers and queries; if you cannot, state your key assumptions, what data you would use to verify them, and how your conclusion would change if they do not hold.** We care about both your conclusion and your reasoning.
+> A **scenario analysis** task — no code, no cloud purchases. Write it in `deploy/COST.md` (aim for ≤600 words). **If you can get the data, give numbers and queries; if not, state your assumptions and how you would verify them.** We look at both the conclusion and the reasoning.
 
-Imagine the `task-api` from Tasks 1–4 as one part of a larger production system. The system also has a high-write user-event table `user_event`: it is written to **DynamoDB**, its data is backed up/synced to an **S3** data-lake bucket (that same bucket is also read by downstream data jobs — EMR / queries), downstream services on **EKS** consume the events, and outbound traffic goes through **ELB**. The app recently shipped a major revision, and the client request logic changed with it. Afterward:
+Treat the `task-api` from Tasks 1–4 as part of a larger system that also has a high-write `user_event` table: written to **DynamoDB**, backed up to an **S3** data-lake bucket that downstream **EMR / queries also read**, consumed by services on **EKS**, egressing through **ELB**. The app recently shipped a major revision and its request logic changed. Since then: the monthly **AWS bill is up ~30%** (~$40k→$52k, unblended; last month 31 days vs 30 this month; a batch of RIs / Savings Plans was bought at the start of the quarter), while **business volume grew only ~5%**; the increase is spread across DynamoDB, S3, EKS, and ELB — part tracks write growth, part is not proportional to usage. You have Cost Explorer, the CUR, ~60% of resources tagged, and CloudWatch. Finance and your leader want to know: **why it rose, whether it can come down next month, and how.**
 
-- the monthly **AWS bill rose about 30% month over month** (illustrative: ~$40k → ~$52k, unblended cost; last month had 31 days, this month 30);
-- over the same period, **business volume (DAU / core request volume) grew only about 5%**;
-- the increase is **spread across DynamoDB, S3, EKS compute, and ELB egress** — at first glance, part of it tracks the write-volume growth, and part of it is not proportional to usage;
-- a batch of RIs / Savings Plans was purchased at the start of this quarter;
-- you have access to: Cost Explorer, an exportable CUR (Cost and Usage Report), roughly 60% of resources tagged with `team` / `env`, CloudWatch metrics, and the service metrics you built in Task 3;
-- Finance and your leader want two answers: **why did it rise**, and **can we bring it down next month, and how**.
+In `deploy/COST.md`, cover:
 
-**In `deploy/COST.md`, provide:**
+- **Baseline** — what you look at first and in what unit (e.g. unit cost), and how you separate "usage growth" from "efficiency / waste";
+- **Attribution** — one "observe → hypothesize → verify with which data" chain that breaks the 30% down to specific sources (how you cover the untagged ~40%, whether the multi-service increase shares one root cause, and the confounders you rule out — billing days, RI/SP amortization, one-off charges);
+- **Trade-off** — pick one constraint, give an actionable plan and what you give up: ① you'd buy RIs/SP but this table migrates next quarter; ② cutting at the source needs the APP team, who have no capacity this quarter; ③ your leader wants −30% but only ~15% is really recoverable;
+- **Experience (optional)** — one real optimization's before/after, and how you confirmed the saving came from your change.
 
-- **Baseline judgment:** which data do you look at first to decide whether this increase is "normal"? How do you separate "usage growth" from "efficiency loss / waste"? What unit do you measure by (for example, unit cost per event / request / DAU)?
-- **Attribution approach:** give one "observe → hypothesize → verify with which data" chain that breaks the 30% increase down to specific sources. Cover at least: which dimensions you split by first (service / usage type / account / region / tag) and how you attribute the untagged ~40% of resources; when the increase is spread across services, how you decide whether they share a **common root cause**; and the confounders you rule out at each step (billing-period day count, RI/SP amortization, one-off charges).
-- **Governance and trade-offs:** pick one constraint and give a concrete first step, an alternative, and what you give up — (1) you want to use commitment discounts (RI / Savings Plans) or reserved capacity to cut cost, but this event table is **scheduled to migrate to a different store next quarter**; (2) the root cause is the post-revision request/write logic, and **reducing it at the source needs the APP team, who are fully booked this quarter**; (3) last month you predicted the cost would drop, but this month it hit a **new high** (your point optimizations were outweighed by growth at the source) — how do you **manage expectations honestly** with your leader.
-- **Evidence from experience (optional but encouraged):** if you have done a real cost optimization, describe the before/after result in one or two sentences and how you confirmed the improvement actually came from your change.
-
-**Behavioral constraints:**
-
-- Conclusions must land on "which data, verified how"; avoid a generic checklist such as "shut down idle resources / buy RIs / add a lifecycle policy" — for the same action, explain **why you judge it applies to this scenario**;
-- Distinguish a "one-off point optimization" from "root-cause governance / a durable mechanism," and explain how you would prevent the cost from creeping back.
+Land conclusions on "which data, verified how" rather than a generic cost-cutting checklist; separate a "point fix" from "root-cause governance" and say how you would prevent regression.
 
 ## Core Acceptance Checklist
 
