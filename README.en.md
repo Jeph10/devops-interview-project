@@ -14,7 +14,7 @@ Your goal is to move it toward an engineering solution that is **buildable, deli
 
 - The suggested effort is **2–3 hours**, not a hard limit. You may spend more time; record your actual time, unfinished work, and next steps honestly in `deploy/NOTES.md`.
 - The assignment does not provide every detail of a production environment. When information is missing, record the key assumptions you need and continue; you do not need to wait for the interviewer to provide a single correct answer.
-- Tasks 1–4 are parallel evaluation dimensions, and you may choose the order. Steps 3A–3C are only the internal validation sequence for the observability task.
+- Tasks 1–5 are parallel evaluation dimensions, and you may choose the order. Steps 3A–3C are only the internal validation sequence for the observability task.
 - You may use ChatGPT, Claude, Copilot, Cursor, or other tools, but you must be able to explain, run, and modify every part of your submission.
 - You do not need to purchase cloud resources. The deployment target may be a local or remote environment that you can demonstrate.
 - No specific tool or implementation is required. Any approach is acceptable if it satisfies the behavioral constraints below and you can explain your choices.
@@ -34,7 +34,8 @@ Your goal is to move it toward an engineering solution that is **buildable, deli
 ├── docker-compose.yml
 ├── .github/workflows/ci.yml
 ├── monitoring/prometheus.yml
-└── deploy/NOTES.md
+├── deploy/NOTES.md
+└── deploy/COST.md
 ```
 
 Local baseline:
@@ -136,6 +137,21 @@ Complete `deploy/NOTES.md`. It is not a generic DevOps questionnaire; it is an e
 
 Reference actual files, jobs, commands, or runtime results. Avoid generic statements such as “in production, we should…”. Keep it concise; for the English version, aim for no more than roughly 1,000 words, equivalent to the Chinese version’s 1,500-character guideline.
 
+## Task 5: Cost Scenario Analysis
+
+> A **scenario analysis** task — no code, no cloud purchases. Write it in `deploy/COST.md` (aim for ≤600 words). **If you can get the data, give numbers and queries; if not, state your assumptions and how you would verify them.** We look at both the conclusion and the reasoning.
+
+Treat the `task-api` from Tasks 1–4 as part of a larger system that also has a high-write `user_event` table: written to **DynamoDB**, backed up to an **S3** data-lake bucket that downstream **EMR / queries also read**, consumed by services on **EKS**, egressing through **ELB**. The app recently shipped a major revision and its request logic changed. Since then: the monthly **AWS bill is up ~30%** (~$40k→$52k, unblended; last month 31 days vs 30 this month; a batch of RIs / Savings Plans was bought at the start of the quarter), while **business volume grew only ~5%**; the increase is spread across DynamoDB, S3, EKS, and ELB — part tracks write growth, part is not proportional to usage. You have Cost Explorer, the CUR, ~60% of resources tagged, and CloudWatch. Finance and your leader want to know: **why it rose, whether it can come down next month, and how.**
+
+In `deploy/COST.md`, cover:
+
+- **Baseline** — what you look at first and in what unit (e.g. unit cost), and how you separate "usage growth" from "efficiency / waste";
+- **Attribution** — one "observe → hypothesize → verify with which data" chain that breaks the 30% down to specific sources (how you cover the untagged ~40%, whether the multi-service increase shares one root cause, and the confounders you rule out — billing days, RI/SP amortization, one-off charges);
+- **Trade-off** — pick one constraint, give an actionable plan and what you give up: ① you'd buy RIs/SP but this table migrates next quarter; ② cutting at the source needs the APP team, who have no capacity this quarter; ③ your leader wants −30% but only ~15% is really recoverable;
+- **Experience (optional)** — one real optimization's before/after, and how you confirmed the saving came from your change.
+
+Land conclusions on "which data, verified how" rather than a generic cost-cutting checklist; separate a "point fix" from "root-cause governance" and say how you would prevent regression.
+
 ## Core Acceptance Checklist
 
 - [ ] The original Go tests pass, with no data races;
@@ -145,7 +161,8 @@ Reference actual files, jobs, commands, or runtime results. Avoid generic statem
 - [ ] the Prometheus target is `UP`, and the Grafana Dashboard contains real data;
 - [ ] metrics can answer questions about traffic, errors, latency percentiles, and task state;
 - [ ] the Dashboard has been validated with actual business traffic, actual results have been compared with expectations, and at least one signal has been confirmed further;
-- [ ] `deploy/NOTES.md` references real evidence from this submission.
+- [ ] `deploy/NOTES.md` references real evidence from this submission;
+- [ ] `deploy/COST.md` attributes the cost increase to evidence or explicit assumptions, states a governance trade-off, and separates point optimizations from root-cause governance.
 
 ## Evaluation Focus
 
@@ -157,6 +174,7 @@ Reference actual files, jobs, commands, or runtime results. Avoid generic statem
 | Delivery safety | Whether permissions, credentials, publication conditions, and artifact traceability are reasonable |
 | Observability | Whether metrics and the Dashboard actually support decisions and troubleshooting |
 | Prioritization | Whether you prioritize the highest-value closed loops within the time you actually invest |
+| Cost judgment | Whether you show unit-cost awareness, attribute the increase to evidence, separate point fixes from root-cause governance, and make an actionable trade-off under constraints |
 
 ## Optional Bonus
 
