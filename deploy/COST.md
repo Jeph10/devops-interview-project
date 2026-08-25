@@ -1,29 +1,29 @@
-# 成本场景分析（任务 5）
+# Cost Scenario Analysis (Task 5)
 
-> 这是任务 5 的交付物。**能拿到数据就给出具体数字和查询；拿不到就写清关键假设、你会用什么数据验证，以及假设不成立时结论会怎么变。** 结论要落到“用哪份数据、怎么验证”，避免通用降本清单。建议全文不超过 800 字。
+> This is the deliverable for Task 5. **If you can access the data, provide specific numbers and queries. If you cannot, state your key assumptions, the data you would use to validate them, and how your conclusions would change if they proved false.** Tie each conclusion to the data and validation method instead of listing generic cost-cutting ideas. Aim for no more than 600 words.
 
-## 1. 判断基线
+## 1. Establish the Baseline
 
-先看哪些数据判断“这次上涨是否正常”？如何区分“用量增长”与“效率下降 / 浪费”？用什么口径衡量（例如单位成本 cost per 事件 / 请求 / DAU）？
+Which data would you inspect first to decide whether the increase is expected? How would you separate usage growth from lower efficiency or waste? Which unit would you use, such as cost per event, request, or daily active user?
 
-## 2. 定位思路（观察 → 假设 → 验证）
+## 2. Attribution Approach (Observe → Hypothesize → Verify)
 
-给一条把这 30% 增量拆解到具体来源的排查链，并说明每一步用什么数据验证：
+Describe one investigation chain that breaks the 30% increase down to specific sources. Explain which data you would use at each step:
 
-- 先按什么维度拆（服务 / usage type / 账号 / region / tag），tag 只覆盖 60% 时怎么补归因；
-- 增量分散在多个服务时，怎么判断它们是否同源；
-- 每一步想排除的干扰（账期天数、RI/SP 摊销、一次性费用等）。
+- which dimensions you would start with, such as service, usage type, account, Region, or tag, and how you would attribute the untagged 40%;
+- how you would determine whether increases across several services share one root cause;
+- which confounding factors you would rule out at each step, such as billing-period length, RI or Savings Plan amortization, and one-time charges.
 
-## 3. 治理与取舍
+## 3. Actions and Trade-offs
 
-任选一条约束，给出可落地的第一步、备选方案，以及你为此放弃了什么：
+Choose one constraint. Give an actionable first step, a fallback option, and what you would give up:
 
-- 想用承诺折扣（RI / Savings Plan）降成本，但事件表下季度计划迁移；
-- 源头减量依赖 APP 团队，但对方本季度排期紧；
-- 上月判断“下月回落”、本月却创新高，如何对 leader 如实管理预期。
+- you want to use committed-use discounts such as RIs or Savings Plans, but the event table is scheduled to migrate next quarter;
+- reducing volume at the source depends on the app team, but that team has no capacity this quarter;
+- last month you expected costs to fall, but this month they reached a new high, and you must set honest expectations with your leader.
 
-并区分“一次性点优化”和“根因治理 / 长效机制”，说明怎么防止成本回退。
+Separate one-time point optimizations from root-cause governance or long-term controls, and explain how you would prevent the cost from returning.
 
-## 4. 经验佐证（可选）
+## 4. Supporting Experience (Optional)
 
-一次真实的成本优化：before/after 的量化结果，以及你如何确认这个改善确实来自你的改动（而不是业务量正好变化）。
+Describe one real cost optimization, including the measured before-and-after result and how you confirmed that your change caused the improvement rather than a coincidental change in business volume.

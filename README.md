@@ -1,26 +1,26 @@
 # DevOps Interview Project
 
-中文｜[English](README.en.md)
+[Chinese](README.zh-CN.md) | English
 
-> 建议投入 2–3 小时｜可以使用 AI 工具
+> Suggested effort: 2–3 hours | AI tools are allowed
 
-## 背景
+## Background
 
-这是一个简单的 Go REST API，支持 task 的增删改查，并提供 `/healthz` 和 `/metrics`。当前仓库只能算“本地可运行”的起点。
+This repository contains a simple Go REST API for creating, reading, updating, and deleting tasks. It also exposes `/healthz` and `/metrics`. The current repository is only a locally runnable starting point.
 
-你的目标是在有限时间内，把它推进到一套**可构建、可交付、可观测、可排查**的工程方案。我们关注的不只是最终文件是否存在，还关注你如何发现问题、选择优先级、验证结果，以及如何处理没有做完的部分。
+Your goal is to move it toward an engineering solution that is **buildable, deliverable, observable, and diagnosable** within the time you choose to invest. We care not only about whether the final files exist, but also about how you identify problems, prioritize work, validate results, and handle unfinished areas.
 
-## 作答规则
+## Working Guidelines
 
-- 建议投入 **2–3 小时**，这不是硬性上限。你可以投入更多时间；请在 `deploy/NOTES.md` 中如实记录实际投入、未完成项和下一步。
-- 题目不会提供生产环境的全部信息。遇到缺失信息时，请记录关键假设并继续推进，不需要等待出题人补齐唯一答案。
-- 任务 1–5 是并列的评价维度，可以自行安排顺序；3A–3C 只是可观测性任务内部的验证步骤。
-- 可以使用 ChatGPT、Claude、Copilot、Cursor 等工具；但你需要能够解释、运行和修改提交中的每一部分。
-- 不要求购买云资源。部署目标可以是你可演示的本地或远程环境。
-- 不限定具体工具和实现方式。只要满足下面的行为约束，并能说明选择即可。
-- 面试会直接使用你的提交做验证和现场修改，不会以背诵工具知识为主。
+- The suggested effort is **2–3 hours**, not a hard limit. You may spend more time; record your actual time, unfinished work, and next steps honestly in `deploy/NOTES.md`.
+- The assignment does not provide every detail of a production environment. When information is missing, record the key assumptions you need and continue; you do not need to wait for the interviewer to provide a single correct answer.
+- Tasks 1–5 are parallel evaluation dimensions, and you may choose the order. Steps 3A–3C are only the internal validation sequence for the observability task.
+- You may use ChatGPT, Claude, Copilot, Cursor, or other tools, but you must be able to explain, run, and modify every part of your submission.
+- You do not need to purchase cloud resources. The deployment target may be a local or remote environment that you can demonstrate.
+- No specific tool or implementation is required. Any approach is acceptable if it satisfies the behavioral constraints below and you can explain your choices.
+- The interview will use your submission directly for validation and live changes. It will not focus on memorizing tool-specific knowledge.
 
-## 关键文件
+## Key Files
 
 ```text
 .
@@ -38,14 +38,14 @@
 └── deploy/COST.md
 ```
 
-本地基线：
+Local baseline:
 
 ```bash
 go test -race -count=1 ./...
 go run .
 ```
 
-API：
+API:
 
 ```text
 GET    /healthz
@@ -57,142 +57,142 @@ PUT    /tasks/{id}
 DELETE /tasks/{id}
 ```
 
-## 任务 1：容器化
+## Task 1: Containerization
 
-把应用制作成可运行的容器镜像。
+Package the application as a runnable container image.
 
-**验收结果：**
+**Acceptance outcomes:**
 
-- `docker build -t task-api .` 成功；
-- 容器启动后 `/healthz` 返回 `{"status":"ok"}`；
-- Docker 实际将容器判定为 `healthy`，不只是 Dockerfile 中存在 `HEALTHCHECK`；
-- 最终镜像小于 15 MiB，以 `docker image inspect task-api --format '{{.Size}}'` 返回的字节数为准；
-- 应用进程不以 root 身份运行。
+- `docker build -t task-api .` succeeds;
+- after the container starts, `/healthz` returns `{"status":"ok"}`;
+- Docker actually reports the container as `healthy`; merely having a `HEALTHCHECK` instruction in the Dockerfile is not sufficient;
+- the final image is smaller than 15 MiB, measured using the byte value returned by `docker image inspect task-api --format '{{.Size}}'`;
+- the application process does not run as root.
 
-当前 Dockerfile 只是起点。请自行检查构建产物和运行时行为。
+The current Dockerfile is only a starting point. Inspect the resulting artifact and its runtime behavior yourself.
 
-## 任务 2：CI/CD
+## Task 2: CI/CD
 
-实现一条能够验证、发布并部署该项目的流水线。可以使用 GitHub Actions，也可以选择其他平台。
+Implement a pipeline that can validate, publish, and deploy this project. You may use GitHub Actions or another platform.
 
-**行为约束：**
+**Behavioral constraints:**
 
-- push 到 `main` 和面向 `main` 的 pull/merge request 都会触发必要的自动验证；
-- 整体交付设计覆盖静态检查、测试、编译、容器镜像构建、镜像发布和部署，但不要求每种触发事件都执行所有阶段；
-- pull/merge request、main push、手动批准等事件允许执行哪些外部副作用，由你做出安全的设计；
-- 发布的镜像能够追溯到具体提交；
-- 凭据不以明文出现在仓库或日志中；
-- deploy 不是 `echo`、注释或伪代码，必须包含能够创建或更新运行环境的实际命令；部署目标可以是本地、临时或远程环境，不要求提供长期可访问的公网地址；
-- 自动验证路径的 job 实际执行时间目标为 10 分钟以内，不计算 runner 排队、人工批准和外部环境等待时间。
+- pushes to `main` and pull/merge requests targeting `main` trigger the necessary automated validation;
+- the overall delivery design covers static analysis, tests, compilation, container image build, image publication, and deployment, but not every event needs to execute every stage;
+- you decide which external side effects are allowed for pull/merge requests, pushes to `main`, manually approved events, or equivalent events on your chosen platform;
+- published images can be traced to a specific commit;
+- credentials do not appear in plaintext in the repository or logs;
+- deployment is not an `echo`, comment, or pseudocode: it must include actual commands that create or update a runtime environment. The target may be local, temporary, or remote, and it does not need to expose a long-lived public URL;
+- the actual execution time target for jobs on the automated validation path is under 10 minutes, excluding runner queueing, manual approval, and waiting for external environments.
 
-如果某个发布或部署步骤因公开 fork、凭据或外部环境限制而无法在线执行，请保留可执行实现和安全的条件控制，提供本地或等价的端到端验证，并在 `deploy/NOTES.md` 中写清验证边界。
+If publication or deployment cannot run online because of public-fork behavior, credentials, or external-environment limitations, keep an executable implementation with safe conditions, perform local or equivalent end-to-end validation, provide the resulting evidence, and document the validation boundary in `deploy/NOTES.md`.
 
-## 任务 3：可观测性
+## Task 3: Observability
 
-### 3A. 运行监控栈
+### 3A. Run the monitoring stack
 
-补全 `docker-compose.yml` 和 `monitoring/`，让应用、Prometheus 和 Grafana 可以一起运行。
+Complete `docker-compose.yml` and `monitoring/` so that the application, Prometheus, and Grafana can run together.
 
-**验收结果：**
+**Acceptance outcomes:**
 
-- Prometheus target 显示为 `UP`；
-- Grafana 能查询 Prometheus 数据；
-- 仓库包含可导入或自动 provision 的 Dashboard；
-- 从干净环境按文档启动并执行你约定的测试流量后，Dashboard 能显示真实数据，而不是因为数据源、查询或时间范围错误而为空。
+- the Prometheus target is shown as `UP`;
+- Grafana can query Prometheus data;
+- the repository contains a Dashboard that can be imported or provisioned automatically;
+- after starting from a clean environment and generating your documented test traffic, the Dashboard shows real data rather than remaining empty because of a datasource, query, or time-range problem.
 
-### 3B. 让指标可以支持值班判断
+### 3B. Make the metrics useful for on-call decisions
 
-现有指标不足以判断 API 是否健康。修改应用和 Dashboard，使值班同事能够回答：
+The existing metrics are not sufficient to determine whether the API is healthy. Modify the application and Dashboard so that an on-call engineer can answer:
 
-- 当前请求量和失败情况如何？
-- 业务请求的 P50、P95、P99 延迟如何？
-- 当前 task 状态如何？
+- What is the current request volume and failure behavior?
+- What are the P50, P95, and P99 latencies for business requests?
+- What is the current task state?
 
-指标类型、标签、统计边界和采样方式由你决定。保留 `/metrics` 作为 Prometheus 抓取入口，并为新增应用代码补充必要测试。
+You decide the metric types, labels, statistical boundaries, and sampling approach. Keep `/metrics` as the Prometheus scrape endpoint, and add the necessary tests for new application code.
 
-### 3C. 验证观测结果
+### 3C. Validate the observations
 
-使用现有 API 产生你认为足以验证 Dashboard 的业务流量和状态变化。方法和操作组合由你决定。
+Use the existing API to generate the business traffic and state transitions that you consider sufficient to validate the Dashboard. You decide the method and operation mix.
 
-运行前，先写下你预计哪些面板会发生什么变化。运行后：
+Before running the experiment, write down what you expect each relevant panel to do. Afterward:
 
-1. 对照 Dashboard 和原始查询，记录实际变化是否符合预期；
-2. 选择一个信号做进一步确认，说明它为什么值得关注；
-3. 如果出现异常、缺失或无法解释的现象，再用额外查询、命令或实验区分服务行为、观测实现和实验本身；
-4. 根据实际证据决定是否修改实现，并把结论与下一步记录到 `deploy/NOTES.md`；
-5. 如果做了修改，重新运行相关步骤验证判断。
+1. compare the Dashboard and raw queries with your expectations, and record whether the actual changes match;
+2. select one signal for further confirmation and explain why it deserves attention;
+3. if you observe an anomaly, missing data, or behavior you cannot explain, use additional queries, commands, or experiments to distinguish service behavior, observability implementation, and the experiment itself;
+4. use the evidence to decide whether to change the implementation, and record the conclusion and next step in `deploy/NOTES.md`;
+5. if you make a change, rerun the relevant steps to validate your conclusion.
 
-我们不要求堆很多面板；能用少量可信信号发现并解释问题更重要。
+We do not expect a large number of panels. A small number of trustworthy signals that help you discover and explain issues is more valuable.
 
-## 任务 4：提交决策记录
+## Task 4: Submit a Decision Record
 
-完成 `deploy/NOTES.md`。它不是通用 DevOps 问答，而是你这次实现的证据索引，包括：
+Complete `deploy/NOTES.md`. It is not a generic DevOps questionnaire; it is an evidence index for this implementation, including:
 
-- 这次实现依赖的关键假设；
-- 实际交付链路和回滚单位；
-- 一次实际验证或排查；
-- 两个你主动做出的工程取舍，以及什么条件会让你改变选择；
-- 实际投入时间、未完成项和下一步；
-- 如果使用了 AI，一处你审查、修改或拒绝其输出的具体例子。
+- the key assumptions on which your implementation depends;
+- the actual delivery path and rollback unit;
+- one validation or investigation that you actually performed;
+- two engineering trade-offs you deliberately made, and the conditions that would cause you to change those decisions;
+- actual time spent, unfinished work, and next steps;
+- if you used AI, one concrete example of AI output that you reviewed, modified, or rejected.
 
-请引用实际文件、job、命令或运行结果，避免只写“生产环境应该……”之类的通用最佳实践。保持简洁，建议全文不超过 1,500 字。
+Reference actual files, jobs, commands, or runtime results. Avoid generic statements such as “in production, we should…”. Keep it concise and aim for no more than roughly 1,000 words.
 
-## 任务 5：成本场景分析
+## Task 5: Cost Scenario Analysis
 
-> 一道**场景分析题**，不写代码、不需买云资源。把分析写进 `deploy/COST.md`（建议 ≤800 字）。**能拿到数据就给数字和查询；拿不到就写清假设和验证方式**——我们看结论，也看思路。
+> A **scenario analysis** task — no code, no cloud purchases. Write it in `deploy/COST.md` (aim for ≤600 words). **If you can get the data, give numbers and queries; if not, state your assumptions and how you would verify them.** We look at both the conclusion and the reasoning.
 
-把任务 1–4 的 `task-api` 当成一个更大系统的一部分。系统里有一张高频写入的 `user_event` 表：写 **DynamoDB**、备份到一个还被下游 EMR / 查询读取的 **S3** 数仓桶、由 **EKS** 消费、经 **ELB** 出网。最近 APP 改版、请求逻辑变了，之后：本月 **AWS 账单环比 +30%**（约 $40k→$52k，unblended 口径，上月 31 天 / 本月 30 天，季度初还买过一批 RI/SP），但**业务量只涨约 5%**；增量分散在 DynamoDB、S3、EKS、ELB，其中一部分随写入量上升、一部分与用量并不成比例。你有 Cost Explorer、CUR、约 60% 资源打了 tag、CloudWatch。财务和 leader 想知道：**为什么涨、下月能不能降、怎么降。**
+Treat the `task-api` from Tasks 1–4 as part of a larger system that also has a high-write `user_event` table: written to **DynamoDB**, backed up to an **S3** data-lake bucket that downstream **EMR / queries also read**, consumed by services on **EKS**, egressing through **ELB**. The app recently shipped a major revision and its request logic changed. Since then: the monthly **AWS bill is up ~30%** (~$40k→$52k, unblended; last month 31 days vs 30 this month; a batch of RIs / Savings Plans was bought at the start of the quarter), while **business volume grew only ~5%**; the increase is spread across DynamoDB, S3, EKS, and ELB — part tracks write growth, part is not proportional to usage. You have Cost Explorer, the CUR, ~60% of resources tagged, and CloudWatch. Finance and your leader want to know: **why it rose, whether it can come down next month, and how.**
 
-在 `deploy/COST.md` 里说清：
+In `deploy/COST.md`, cover:
 
-- **基线**：先看什么、用什么口径（如单位成本），怎么分“用量增长”和“效率浪费”；
-- **定位**：一条“观察→假设→用什么数据验证”的链，把这 30% 拆到具体来源（tag 只覆盖 60% 怎么补、多服务是否同源、排除账期天数 / RI 摊销 / 一次性费用等干扰）；
-- **取舍**：任选一条约束，给可落地方案和你放弃了什么——① 想买 RI/SP 但这表下季度要迁；② 源头减量要 APP 团队配合但对方没排期；③ leader 要降 30% 但真实可省约 15%；
-- **经验（可选）**：一次真实优化的 before/after，以及你怎么确认省下的是你改出来的。
+- **Baseline** — what you look at first and in what unit (e.g. unit cost), and how you separate "usage growth" from "efficiency / waste";
+- **Attribution** — one "observe → hypothesize → verify with which data" chain that breaks the 30% down to specific sources (how you cover the untagged ~40%, whether the multi-service increase shares one root cause, and the confounders you rule out — billing days, RI/SP amortization, one-off charges);
+- **Trade-off** — pick one constraint, give an actionable plan and what you give up: ① you'd buy RIs/SP but this table migrates next quarter; ② cutting at the source needs the APP team, who have no capacity this quarter; ③ your leader wants −30% but only ~15% is really recoverable;
+- **Experience (optional)** — one real optimization's before/after, and how you confirmed the saving came from your change.
 
-结论落到“用哪份数据、怎么验证”，别堆通用降本清单；区分“点优化”和“根因治理”，并说明怎么防回退。
+Land conclusions on "which data, verified how" rather than a generic cost-cutting checklist; separate a "point fix" from "root-cause governance" and say how you would prevent regression.
 
-## 核心验收清单
+## Core Acceptance Checklist
 
-- [ ] 原有 Go 测试通过，并且没有数据竞争；
-- [ ] 镜像可以运行、实际变为 healthy、小于 15 MiB、进程非 root；
-- [ ] CI 在 pull/merge request 和 main push 上执行符合其风险级别的动作；
-- [ ] 镜像发布和部署步骤是真实、可追溯的；
-- [ ] Prometheus target 为 `UP`，Grafana Dashboard 有真实数据；
-- [ ] 指标可以回答流量、错误、延迟分位数和 task 状态；
-- [ ] Dashboard 已通过实际业务流量验证，实际结果与预期完成了对照，并对至少一个信号做了进一步确认；
-- [ ] `deploy/NOTES.md` 引用了本次提交的真实证据；
-- [ ] `deploy/COST.md` 把成本上涨归因到了证据或明确假设，给出治理取舍，并区分点优化与根因治理。
+- [ ] The original Go tests pass, with no data races;
+- [ ] the image runs, becomes healthy in practice, is smaller than 15 MiB, and runs the application as a non-root user;
+- [ ] CI performs actions appropriate to the risk level of pull/merge requests and pushes to `main`;
+- [ ] image publication and deployment are real and traceable;
+- [ ] the Prometheus target is `UP`, and the Grafana Dashboard contains real data;
+- [ ] metrics can answer questions about traffic, errors, latency percentiles, and task state;
+- [ ] the Dashboard has been validated with actual business traffic, actual results have been compared with expectations, and at least one signal has been confirmed further;
+- [ ] `deploy/NOTES.md` references real evidence from this submission;
+- [ ] `deploy/COST.md` attributes the cost increase to evidence or explicit assumptions, states a governance trade-off, and separates point optimizations from root-cause governance.
 
-## 评估重点
+## Evaluation Focus
 
-| 维度 | 关注点 |
+| Dimension | What we look for |
 |---|---|
-| 调试与验证 | 是否先取得证据、形成假设、控制变量并重新验证 |
-| 工程判断 | 是否识别约束冲突、做出取舍并说明剩余风险 |
-| 正确性 | 实际运行结果是否与声明一致，边界变化后是否仍正确 |
-| 交付安全 | 权限、凭据、发布条件和制品可追溯性是否合理 |
-| 可观测性 | 指标和 Dashboard 是否真的支持判断与排障 |
-| 优先级 | 在实际投入时间内是否优先完成最有价值的闭环 |
-| 成本判断 | 是否有单位成本意识、能把成本上涨归因到证据、区分点优化与根因治理、并在约束下做出可落地取舍 |
+| Debugging and validation | Whether you gather evidence first, form hypotheses, control variables, and validate again |
+| Engineering judgment | Whether you identify conflicting constraints, make trade-offs, and explain remaining risks |
+| Correctness | Whether runtime behavior matches your claims and remains correct when boundaries change |
+| Delivery safety | Whether permissions, credentials, publication conditions, and artifact traceability are reasonable |
+| Observability | Whether metrics and the Dashboard actually support decisions and troubleshooting |
+| Prioritization | Whether you prioritize the highest-value closed loops within the time you actually invest |
+| Cost judgment | Whether you show unit-cost awareness, attribute the increase to evidence, separate point fixes from root-cause governance, and make an actionable trade-off under constraints |
 
-## 可选加分项
+## Optional Bonus
 
-核心任务完成后，最多选择 **1 项**继续实现。没有做加分项不会影响核心部分拿到高评价。
+After completing the core work, choose at most **one** item to continue implementing. Not completing a bonus item does not prevent a strong evaluation of the core work.
 
-- 容器镜像扫描及基于结果的处理策略；
-- graceful shutdown，并提供可重复验证；
-- readiness 机制，并展示状态变化；
-- 可触发、可恢复验证的告警；
-- staging 到 production 的制品晋级；
-- 为本服务定义一个可查询的 SLI/SLO。
+- container image scanning and a policy for handling the result;
+- graceful shutdown with repeatable validation;
+- a readiness mechanism with demonstrated state transitions;
+- an alert that can be triggered and shown to recover;
+- artifact promotion from staging to production;
+- a queryable SLI/SLO for this service.
 
-选择了什么不重要，重要的是为什么它比其他候选项更值得占用剩余时间，以及你是否真的验证过。
+What you choose is less important than why it deserves the remaining time more than the alternatives, and whether you actually validated it.
 
 ## FAQ
 
-**可以使用 AI 吗？**  可以。无需提交完整聊天记录，但你必须对最终结果负责。面试中可能要求你解释或现场修改 AI 生成的部分。
+**May I use AI?** Yes. You do not need to submit the full conversation history, but you are responsible for the final result. During the interview, you may be asked to explain or modify AI-generated parts.
 
-**一定要真实部署到公网吗？**  不需要。部署目标必须真实可执行和可演示，但可以是本地环境；不要为了本题购买资源。
+**Must I deploy to a public environment?** No. The deployment target must be executable and demonstrable, but it may be local. Do not purchase resources for this assignment.
 
-**一定要在 2–3 小时后停止吗？**  不需要，这是建议投入而非硬限制。无论实际投入多久，请记录已验证范围、未完成原因和下一步；合理取舍和验证质量比堆积文件更重要。
+**Must I stop after 2–3 hours?** No. This is suggested effort, not a hard limit. Regardless of how long you spend, record what you validated, why anything remains unfinished, and what you would do next. Good prioritization and validation matter more than accumulating files.

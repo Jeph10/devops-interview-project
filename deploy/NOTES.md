@@ -1,43 +1,43 @@
-# 实施说明与决策记录
+# Implementation Notes and Decision Record
 
-> 只记录这次提交中真实发生的假设、决策和证据。请引用具体文件、job、命令或运行结果；保持简洁，建议全文不超过 1,500 字。
+> Record only assumptions, decisions, and evidence from this submission. Reference specific files, jobs, commands, or runtime results. Keep the document concise and aim for no more than 1,000 words.
 
-## 1. 关键假设
+## 1. Key Assumptions
 
-列出这次实现依赖的 3 个关键假设，例如部署边界、团队协作方式、流量特征或外部平台能力。
+List three key assumptions that your implementation depends on. These may concern the deployment boundary, team workflow, traffic patterns, or external platform capabilities.
 
-对每个假设说明：为什么需要做这个假设，以及如果它不成立，当前方案哪里需要改变。不要把假设写成已知事实。
+For each assumption, explain why it was needed and what would need to change if it proved false. Do not present assumptions as known facts.
 
-## 2. 交付链路
+## 2. Delivery Path
 
-从一次 pull/merge request 开始，说明代码经过哪些实际 job，在哪个事件发布镜像、如何标识制品、部署到哪里，以及失败时回滚的最小单位。
+Starting with a pull or merge request, describe the jobs the code passes through, the event that publishes the image, how the artifact is identified, where it is deployed, and the smallest unit that can be rolled back.
 
-请引用你的 workflow job、部署命令和镜像标识。若某一步因缺少外部环境未实际执行，明确写出验证边界。
+Reference the relevant workflow jobs, deployment commands, and image identifiers. If a step could not be run because an external environment was unavailable, state the validation boundary clearly.
 
-## 3. 一次实际验证或排查
+## 3. One Actual Validation or Investigation
 
-选择本题中的一个风险假设、运行结果或观测信号，记录你如何确认它：
+Choose one risky assumption, runtime result, or observability signal from this assignment and describe how you checked it:
 
-- 你想验证什么，原先预期是什么；
-- 执行了什么命令、查询或实验；
-- 哪条证据支持或推翻了预期；
-- 你是否修改了实现；
-- 如果修改了，复测结果是什么；如果没有，为什么当前证据足够。
+- what you wanted to validate and what you expected;
+- which commands, queries, or experiments you ran;
+- which evidence supported or disproved your expectation;
+- whether you changed the implementation;
+- if you made a change, what the repeated test showed; otherwise, why the current evidence was sufficient.
 
-不要求必须遇到故障，也不要写虚构事故预案。
+You do not need to encounter a failure. Do not invent an incident or a test result.
 
-## 4. 两个工程取舍
+## 4. Two Engineering Trade-offs
 
-选择你实际做出的两个取舍。每个取舍说明：当时的约束、考虑过的选项、最终选择、验证方式、仍然存在的风险，以及什么新条件会让你改变选择。
+Describe two trade-offs that you actually made. For each one, explain the constraint, the options you considered, your final choice, how you validated it, the remaining risk, and the new condition that would make you change the decision.
 
-## 5. 实际投入
+## 5. Actual Time Spent
 
-2–3 小时是建议投入，不是硬性上限。
+The suggested effort is 2–3 hours, not a hard limit.
 
-- 实际投入时间：
-- 主动没有做的内容及原因：
-- 如果再有 60 分钟，下一步会做什么：
+- Actual time spent:
+- Work deliberately left out, and why:
+- What you would do next with another 60 minutes:
 
-## 6. AI 协作
+## 6. Use of AI
 
-如果使用了 AI，记录一处你修改或拒绝其输出的具体例子，并写出你依靠什么证据发现问题。若未使用，写“未使用”。
+If you used AI, describe one specific output that you changed or rejected and the evidence that helped you find the problem. If you did not use AI, write “Not used.”
