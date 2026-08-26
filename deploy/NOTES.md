@@ -40,4 +40,10 @@ The suggested effort is 2–3 hours, not a hard limit.
 
 ## 6. Use of AI
 
-If you used AI, describe one specific output that you changed or rejected and the evidence that helped you find the problem. If you did not use AI, write “Not used.”
+If you used AI:
+
+- list every transcript file committed under `deploy/ai-transcripts/`;
+- identify the tool and model for each session when known;
+- describe one specific output that you changed or rejected and the evidence that helped you find the problem.
+
+The transcript files must contain every prompt and visible response, as required by the repository README. If you did not use AI, write “Not used.”

@@ -15,7 +15,7 @@ Your goal is to move it toward an engineering solution that is **buildable, deli
 - The suggested effort is **2–3 hours**, not a hard limit. You may spend more time; record your actual time, unfinished work, and next steps honestly in `deploy/NOTES.md`.
 - The assignment does not provide every detail of a production environment. When information is missing, record the key assumptions you need and continue; you do not need to wait for the interviewer to provide a single correct answer.
 - Tasks 1–5 are parallel evaluation dimensions, and you may choose the order. Steps 3A–3C are only the internal validation sequence for the observability task.
-- You may use ChatGPT, Claude, Copilot, Cursor, or other tools, but you must be able to explain, run, and modify every part of your submission.
+- You may use ChatGPT, Claude, Copilot, Cursor, or other tools, but you must be able to explain, run, and modify every part of your submission. If you use AI, you must also commit the complete record described in [AI Conversation Records](#ai-conversation-records).
 - You do not need to purchase cloud resources. The deployment target may be a local or remote environment that you can demonstrate.
 - No specific tool or implementation is required. Any approach is acceptable if it satisfies the behavioral constraints below and you can explain your choices.
 - The interview will use your submission directly for validation and live changes. It will not focus on memorizing tool-specific knowledge.
@@ -133,7 +133,7 @@ Complete `deploy/NOTES.md`. It is not a generic DevOps questionnaire; it is an e
 - one validation or investigation that you actually performed;
 - two engineering trade-offs you deliberately made, and the conditions that would cause you to change those decisions;
 - actual time spent, unfinished work, and next steps;
-- if you used AI, one concrete example of AI output that you reviewed, modified, or rejected.
+- if you used AI, an index of all transcript files and one concrete example of AI output that you reviewed, modified, or rejected.
 
 Reference actual files, jobs, commands, or runtime results. Avoid generic statements such as “in production, we should…”. Keep it concise and aim for no more than roughly 1,000 words.
 
@@ -152,6 +152,17 @@ In `deploy/COST.md`, cover:
 
 Land conclusions on "which data, verified how" rather than a generic cost-cutting checklist; separate a "point fix" from "root-cause governance" and say how you would prevent regression.
 
+## AI Conversation Records
+
+If you use an AI tool at any point, the complete record of that use is part of the required submission.
+
+- Save every prompt and every visible AI response under `deploy/ai-transcripts/`, including conversations whose output you did not use.
+- Keep the records in chronological order, use one Markdown, text, or JSON file per session, and identify the tool and model when known.
+- If a tool does not support export, copy the visible conversation manually. For inline completion tools with no conversation view, keep a contemporaneous manual log of the instructions or context you provided and the suggestions you accepted, changed, or rejected.
+- Do not commit credentials, tokens, personal data, or confidential third-party information. Replace only sensitive values with `[REDACTED: reason]` so the rest of the record remains reviewable.
+
+Transcript files do not count toward the `deploy/NOTES.md` word limit. If you did not use AI, write `Not used` in Section 6 of `deploy/NOTES.md`; no transcript directory is required.
+
 ## Core Acceptance Checklist
 
 - [ ] The original Go tests pass, with no data races;
@@ -162,7 +173,8 @@ Land conclusions on "which data, verified how" rather than a generic cost-cuttin
 - [ ] metrics can answer questions about traffic, errors, latency percentiles, and task state;
 - [ ] the Dashboard has been validated with actual business traffic, actual results have been compared with expectations, and at least one signal has been confirmed further;
 - [ ] `deploy/NOTES.md` references real evidence from this submission;
-- [ ] `deploy/COST.md` attributes the cost increase to evidence or explicit assumptions, states a governance trade-off, and separates point optimizations from root-cause governance.
+- [ ] `deploy/COST.md` attributes the cost increase to evidence or explicit assumptions, states a governance trade-off, and separates point optimizations from root-cause governance;
+- [ ] if AI was used, `deploy/ai-transcripts/` contains complete, chronological records of all AI interactions, with only sensitive values redacted.
 
 ## Evaluation Focus
 
@@ -191,7 +203,7 @@ What you choose is less important than why it deserves the remaining time more t
 
 ## FAQ
 
-**May I use AI?** Yes. You do not need to submit the full conversation history, but you are responsible for the final result. During the interview, you may be asked to explain or modify AI-generated parts.
+**May I use AI?** Yes. If you use it, you must commit every prompt and visible response as described in [AI Conversation Records](#ai-conversation-records). You remain responsible for the final result, and during the interview you may be asked to explain or modify AI-generated parts.
 
 **Must I deploy to a public environment?** No. The deployment target must be executable and demonstrable, but it may be local. Do not purchase resources for this assignment.
 
