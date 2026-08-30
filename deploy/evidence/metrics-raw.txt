@@ -1,0 +1,6 @@
+# HELP task_api_tasks_total Total number of tasks.
+# TYPE task_api_tasks_total gauge
+task_api_tasks_total 0
+# HELP task_api_tasks_done Number of completed tasks.
+# TYPE task_api_tasks_done gauge
+task_api_tasks_done 0
