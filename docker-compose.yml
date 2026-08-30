@@ -5,12 +5,6 @@ services:
       - "8080:8080"
     environment:
       PORT: "8080"
-    healthcheck:
-      test: ["/usr/local/bin/task-api", "-healthcheck"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 5s
     depends_on:
       prometheus:
         condition: service_started

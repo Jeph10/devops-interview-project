@@ -37,11 +37,11 @@ func main() {
 	mux.Handle("GET /metrics", pm.MetricsHandler())
 
 	// Task CRUD — wrapped with Prometheus RED metrics
-	mux.HandleFunc("GET /tasks", pm.WrapHandler("GET /tasks", ListTasksHandler(store)))
-	mux.HandleFunc("POST /tasks", pm.WrapHandler("POST /tasks", CreateTaskHandler(store)))
-	mux.HandleFunc("GET /tasks/{id}", pm.WrapHandler("GET /tasks/{id}", GetTaskHandler(store)))
-	mux.HandleFunc("PUT /tasks/{id}", pm.WrapHandler("PUT /tasks/{id}", UpdateTaskHandler(store)))
-	mux.HandleFunc("DELETE /tasks/{id}", pm.WrapHandler("DELETE /tasks/{id}", DeleteTaskHandler(store)))
+	mux.HandleFunc("GET /tasks", pm.WrapHandler("/tasks", ListTasksHandler(store)))
+	mux.HandleFunc("POST /tasks", pm.WrapHandler("/tasks", CreateTaskHandler(store)))
+	mux.HandleFunc("GET /tasks/{id}", pm.WrapHandler("/tasks/{id}", GetTaskHandler(store)))
+	mux.HandleFunc("PUT /tasks/{id}", pm.WrapHandler("/tasks/{id}", UpdateTaskHandler(store)))
+	mux.HandleFunc("DELETE /tasks/{id}", pm.WrapHandler("/tasks/{id}", DeleteTaskHandler(store)))
 
 	// Periodically update task gauge metrics.
 	go func() {

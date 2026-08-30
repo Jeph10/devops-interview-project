@@ -7,6 +7,8 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 func setup() *MemoryStore {
@@ -114,9 +116,14 @@ func TestMetricsEndpoint(t *testing.T) {
 	store.Update(task.ID, nil, &done)
 	store.Create("task B")
 
+	// Create middleware with a fresh registry to avoid duplicate registration.
+	reg := prometheus.NewRegistry()
+	pm := NewPrometheusMiddlewareWithRegistry(reg)
+	pm.UpdateTaskStats(2, 1)
+
 	req := httptest.NewRequest("GET", "/metrics", nil)
 	rec := httptest.NewRecorder()
-	MetricsHandler(store)(rec, req)
+	pm.MetricsHandlerForRegistry(reg).ServeHTTP(rec, req)
 
 	if rec.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d", rec.Code)
@@ -128,6 +135,40 @@ func TestMetricsEndpoint(t *testing.T) {
 	}
 	if !strings.Contains(body, "task_api_tasks_done 1") {
 		t.Fatalf("expected done=1 in metrics, got:\n%s", body)
+	}
+}
+
+func TestMetricsCounterIncremented(t *testing.T) {
+	reg := prometheus.NewRegistry()
+	pm := NewPrometheusMiddlewareWithRegistry(reg)
+
+	// Simulate a request.
+	pm.RecordRequest("GET", "/tasks", "200", 0.05)
+
+	req := httptest.NewRequest("GET", "/metrics", nil)
+	rec := httptest.NewRecorder()
+	pm.MetricsHandlerForRegistry(reg).ServeHTTP(rec, req)
+
+	body := rec.Body.String()
+	if !strings.Contains(body, `http_requests_total{method="GET",path="/tasks",status="200"} 1`) {
+		t.Fatalf("expected counter to be incremented, got:\n%s", body)
+	}
+}
+
+func TestMetricsDurationRecorded(t *testing.T) {
+	reg := prometheus.NewRegistry()
+	pm := NewPrometheusMiddlewareWithRegistry(reg)
+
+	// Simulate a request with duration.
+	pm.RecordRequest("POST", "/tasks", "201", 0.1)
+
+	req := httptest.NewRequest("GET", "/metrics", nil)
+	rec := httptest.NewRecorder()
+	pm.MetricsHandlerForRegistry(reg).ServeHTTP(rec, req)
+
+	body := rec.Body.String()
+	if !strings.Contains(body, `http_request_duration_seconds_count{method="POST",path="/tasks"} 1`) {
+		t.Fatalf("expected histogram to have observation, got:\n%s", body)
 	}
 }
 

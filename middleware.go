@@ -3,7 +3,6 @@ package main
 import (
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -22,15 +21,21 @@ type PrometheusMiddleware struct {
 
 // NewPrometheusMiddleware creates a new middleware instance with registered metrics.
 func NewPrometheusMiddleware() *PrometheusMiddleware {
+	return NewPrometheusMiddlewareWithRegistry(prometheus.DefaultRegisterer)
+}
+
+// NewPrometheusMiddlewareWithRegistry creates middleware using the given registerer.
+// Useful for tests to avoid duplicate registration on the global registry.
+func NewPrometheusMiddlewareWithRegistry(reg prometheus.Registerer) *PrometheusMiddleware {
 	return &PrometheusMiddleware{
-		requestCounter: promauto.NewCounterVec(
+		requestCounter: promauto.With(reg).NewCounterVec(
 			prometheus.CounterOpts{
 				Name: "http_requests_total",
 				Help: "Total number of HTTP requests.",
 			},
 			[]string{"method", "path", "status"},
 		),
-		requestDuration: promauto.NewHistogramVec(
+		requestDuration: promauto.With(reg).NewHistogramVec(
 			prometheus.HistogramOpts{
 				Name:    "http_request_duration_seconds",
 				Help:    "HTTP request latency distribution.",
@@ -38,19 +43,19 @@ func NewPrometheusMiddleware() *PrometheusMiddleware {
 			},
 			[]string{"method", "path"},
 		),
-		inFlight: promauto.NewGauge(
+		inFlight: promauto.With(reg).NewGauge(
 			prometheus.GaugeOpts{
 				Name: "http_requests_in_flight",
 				Help: "Number of HTTP requests currently in flight.",
 			},
 		),
-		tasksTotal: promauto.NewGauge(
+		tasksTotal: promauto.With(reg).NewGauge(
 			prometheus.GaugeOpts{
 				Name: "task_api_tasks_total",
 				Help: "Total number of tasks.",
 			},
 		),
-		tasksDone: promauto.NewGauge(
+		tasksDone: promauto.With(reg).NewGauge(
 			prometheus.GaugeOpts{
 				Name: "task_api_tasks_done",
 				Help: "Number of completed tasks.",
@@ -100,6 +105,11 @@ func (pm *PrometheusMiddleware) RecordRequest(method, path, status string, durat
 // MetricsHandler returns the Prometheus /metrics HTTP handler.
 func (pm *PrometheusMiddleware) MetricsHandler() http.Handler {
 	return promhttp.Handler()
+}
+
+// MetricsHandlerForRegistry returns a /metrics handler for a specific registry.
+func (pm *PrometheusMiddleware) MetricsHandlerForRegistry(reg *prometheus.Registry) http.Handler {
+	return promhttp.HandlerFor(reg, promhttp.HandlerOpts{})
 }
 
 // statusRecorder captures the status code written by a handler.

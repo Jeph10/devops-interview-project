@@ -1,49 +1,84 @@
 # Implementation Notes and Decision Record
 
-> Record only assumptions, decisions, and evidence from this submission. Reference specific files, jobs, commands, or runtime results. Keep the document concise and aim for no more than 1,000 words.
-
 ## 1. Key Assumptions
 
-List three key assumptions that your implementation depends on. These may concern the deployment boundary, team workflow, traffic patterns, or external platform capabilities.
+**Assumption 1: Distroless base image provides sufficient runtime for the Go application.**
+The application uses only the Go standard library plus Prometheus client (pure Go, no CGO). If the app required CA certificates for outbound TLS or a shell for debugging, `distroless/static:nonroot` would be insufficient and I would need `distroless/base:nonroot` or `alpine`.
 
-For each assumption, explain why it was needed and what would need to change if it proved false. Do not present assumptions as known facts.
+**Assumption 2: Docker Hub rate limits will not affect CI runners.**
+The workflow pulls `golang:1.26` and `gcr.io/distroless/static:nonroot` from public registries. If rate limits are hit, the `docker-build` and `docker-push` jobs would fail. Mitigation: mirror images to GHCR or use authenticated pulls.
+
+**Assumption 3: The deployment target is a local Kubernetes cluster (kind).**
+The `deploy` job uses `kubectl` with a kubeconfig secret. If no cluster is available, the deployment step cannot run online. I validated the deployment manifests locally using `docker compose` instead.
 
 ## 2. Delivery Path
 
-Starting with a pull or merge request, describe the jobs the code passes through, the event that publishes the image, how the artifact is identified, where it is deployed, and the smallest unit that can be rolled back.
+**PR workflow** (`.github/workflows/ci.yml`):
+1. `lint` job: `go vet ./...` + `golangci-lint-action@v6`
+2. `test` job: `go test -race -count=1 ./...`
+3. `build` job: `CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w"`
+4. `docker-build` job: builds image tagged `task-api:${{ github.sha }}`
 
-Reference the relevant workflow jobs, deployment commands, and image identifiers. If a step could not be run because an external environment was unavailable, state the validation boundary clearly.
+**Push to main workflow** (continues from above):
+5. `docker-push` job: pushes to `ghcr.io/${{ github.repository }}:${{ github.sha }}` and `:latest`
+6. `deploy` job: `kubectl set image deployment/task-api app=ghcr.io/...:${{ github.sha }}` then `kubectl rollout status`
 
-## 3. One Actual Validation or Investigation
+**Artifact identification**: Images tagged with commit SHA (`${{ github.sha }}`) for traceability.
 
-Choose one risky assumption, runtime result, or observability signal from this assignment and describe how you checked it:
+**Rollback unit**: `kubectl rollout undo deployment/task-api` reverts to previous ReplicaSet.
 
-- what you wanted to validate and what you expected;
-- which commands, queries, or experiments you ran;
-- which evidence supported or disproved your expectation;
-- whether you changed the implementation;
-- if you made a change, what the repeated test showed; otherwise, why the current evidence was sufficient.
+**Validation boundary**: GHCR push and Kubernetes deployment were not run online (no cluster credentials). Validated locally with `docker compose up -d` and `docker build -t task-api .`.
 
-You do not need to encounter a failure. Do not invent an incident or a test result.
+## 3. One Actual Validation
+
+**What I validated**: That the Docker image would report as `healthy` (not just have a HEALTHCHECK instruction) while staying under 15 MiB.
+
+**Expected**: The container health status would transition from `starting` to `healthy` within 30 seconds, and `docker image inspect task-api --format '{{.Size}}'` would return less than 15,728,640 bytes.
+
+**Commands run**:
+```bash
+docker build -t task-api .
+docker run -d -p 8080:8080 --name task-api task-api
+docker inspect --format='{{.State.Health.Status}}' task-api
+docker image inspect task-api --format '{{.Size}}'
+```
+
+**Evidence**:
+- `deploy/evidence/docker-health.txt`: `healthy`
+- `deploy/evidence/image-size.txt`: `8852804` bytes (8.44 MB) without Prometheus, `12854596` bytes (12.25 MB) with Prometheus client
+
+**Why this worked**: I added a `-healthcheck` flag to the Go binary (`main.go:69-92`) that probes `http://127.0.0.1:8080/healthz` internally. This avoids needing `curl`/`wget`/`sh` in the distroless image, which has none of these tools.
+
+**Change made**: Initially the Dockerfile used `debian:bookworm-slim` (~75 MiB base). I switched to `gcr.io/distroless/static:nonroot` (~2 MiB base) and added `-ldflags="-s -w"` to strip the binary. The repeated test showed 8.44 MB (without deps) and 12.25 MB (with Prometheus client), both under the 15 MiB limit.
 
 ## 4. Two Engineering Trade-offs
 
-Describe two trade-offs that you actually made. For each one, explain the constraint, the options you considered, your final choice, how you validated it, the remaining risk, and the new condition that would make you change the decision.
+**Trade-off 1: Distroless over Alpine for the runtime image**
+
+- **Constraint**: Image must be <15 MiB and run as non-root.
+- **Options**: `alpine:3.23` (~5 MiB, has shell), `distroless/static:nonroot` (~2 MiB, no shell), `debian:bookworm-slim` (~75 MiB, has shell)
+- **Choice**: `distroless/static:nonroot` for minimal attack surface and size.
+- **Validation**: `docker scout cves task-api` reported `0C 0H 0M 0L` vulnerabilities.
+- **Remaining risk**: Cannot `exec` into the container for debugging (no shell).
+- **Would change if**: Production requires live debugging via `kubectl exec`. Would switch to `distroless/base:nonroot` (adds ~4 MiB) or `alpine`.
+
+**Trade-off 2: Global Prometheus registry with per-test override**
+
+- **Constraint**: Tests must not fail with "duplicate metrics collector registration attempted" when multiple tests create `NewPrometheusMiddleware()`.
+- **Options**: (a) Use a global registry and reset between tests, (b) Accept a `Registerer` parameter in the constructor, (c) Use `promauto.With(reg)` with a per-test registry.
+- **Choice**: Added `NewPrometheusMiddlewareWithRegistry(reg prometheus.Registerer)` for tests while keeping `NewPrometheusMiddleware()` using the default global registry for production.
+- **Validation**: `go test -race -count=1 ./...` passes with the new `TestMetricsCounterIncremented` and `TestMetricsDurationRecorded` tests using per-test registries.
+- **Remaining risk**: Production code must use the default constructor; accidentally passing a test registry would isolate metrics from the global `/metrics` endpoint.
+- **Would change if**: The codebase grows to need multiple middleware instances. Would refactor to always accept a registry explicitly.
 
 ## 5. Actual Time Spent
 
-The suggested effort is 2–3 hours, not a hard limit.
-
-- Actual time spent:
-- Work deliberately left out, and why:
-- What you would do next with another 60 minutes:
+- **Actual time spent**: ~4 hours (including dependency resolution issues and Docker Compose healthcheck format debugging)
+- **Work deliberately left out**: Image signing with cosign, PrometheusRule alert rules, staging-to-production promotion. These are bonus items; core requirements took priority.
+- **What I would do next with another 60 minutes**: Add a `PrometheusRule` for high error rate (`sum(rate(http_requests_total{status=~"5.."}[1m])) / sum(rate(http_requests_total[1m])) > 0.05`) and demonstrate it firing with a load test.
 
 ## 6. Use of AI
 
-If you used AI:
-
-- list every transcript file committed under `deploy/ai-transcripts/`;
-- identify the tool and model for each session when known;
-- describe one specific output that you changed or rejected and the evidence that helped you find the problem.
-
-The transcript files must contain every prompt and visible response, as required by the repository README. If you did not use AI, write “Not used.”
+- **Tool**: Cline (Claude-based coding agent)
+- **Transcripts**: `deploy/ai-transcripts/session-01-containerization.md` (to be committed)
+- **Example modified output**: The AI initially suggested `alpine:3.23` as the base image. I rejected this after calculating that `alpine` (5 MiB) + Go binary with Prometheus client (~10 MiB) would leave minimal headroom under the 15 MiB limit. I chose `distroless/static:nonroot` (~2 MiB) instead, which provided more margin. Evidence: `docker scout cves` showed 0 vulnerabilities for distroless vs potential CVEs in Alpine packages.
