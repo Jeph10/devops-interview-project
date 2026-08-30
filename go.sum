@@ -4,8 +4,6 @@ github.com/cespare/xxhash/v2 v2.2.0 h1:DC2CZ1Ep5Y4k3ZQ899DldepgrayRUGE6BBZ/cd9Cj
 github.com/cespare/xxhash/v2 v2.2.0/go.mod h1:VGX0DQ3Q6kWi7AoAeZDth3/j3BFtOZR5XLFGgcrjCOs=
 github.com/golang/protobuf v1.5.3 h1:KhyjKTUHGrmVU+TtKt6RzTjsQJeIEwr8HJnQoODUBl0=
 github.com/golang/protobuf v1.5.3/go.mod h1:XVQd3VNwM+JqD3oG2Ue2ip4fOMUkwXdXDdiuN0vRsmY=
-github.com/munnerz/goautoneg v0.0.0-20190602004415-876f2712d567 h1:C3w9PqII01/Oq1c1nUAm88MOHcQC9l5mIlSMApZMrHA=
-github.com/munnerz/goautoneg v0.0.0-20190602004415-876f2712d567/go.mod h1:+n7T8mK8HuQTcFwEeznm/DIxMOiR9yIdICNftLE1DvQ=
 github.com/prometheus/client_golang v1.19.0 h1:YbY5r2L0m8O9441e0JNYEDoKFqY9MNBh4fI8aHfVW18=
 github.com/prometheus/client_golang v1.19.0/go.mod h1:ZRM9JEB0FLHn0mH0sIvJNk9QnxKNyqgHjPjWXQn0jAA=
 github.com/prometheus/client_model v0.5.0 h1:VQw1hX8qg3m5t7bN1V3XW4bT9V4aHh0J7wNmNPWpmWA=
@@ -18,3 +16,4 @@ golang.org/x/sys v0.13.0 h1:Af8nKPmuFypiUBjVoU9V20FiaFXOcuZI21p0ycVYYGE=
 golang.org/x/sys v0.13.0/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 google.golang.org/protobuf v1.31.0 h1:g0LDEJHgrBl9N9r17Ru3sqWhkIx2NB67okBHPwC7hs8=
 google.golang.org/protobuf v1.31.0/go.mod h1:HV8QOd/L58Z+nl8r43ehVNZIU/HEI6OcFqwMG9pJV4I=
+
