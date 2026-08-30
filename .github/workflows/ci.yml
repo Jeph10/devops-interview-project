@@ -32,9 +32,9 @@ jobs:
       - name: Run go vet
         run: go vet ./...
       - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v6
-        with:
-          version: v1.60
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.60.1
+          $(go env GOPATH)/bin/golangci-lint run ./...
 
   test:
     runs-on: ubuntu-latest
@@ -213,3 +213,4 @@ jobs:
           docker login -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }} ${{ env.REGISTRY }}
           docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:staging
           echo "✓ Tagged and pushed as :staging"
+
