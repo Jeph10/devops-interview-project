@@ -148,7 +148,7 @@ jobs:
           cache-to: type=gha,mode=max
 
   deploy-staging:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, kube]
     needs: docker-push
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     environment: staging
@@ -175,11 +175,16 @@ jobs:
       - name: Deploy to staging
         if: steps.check.outputs.has_kubeconfig == 'true'
         run: |
-          IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+          IMAGE="${{ env.IMAGE_NAME }}:${{ github.sha }}"
           echo "Deploying $IMAGE to staging..."
+          # Login and pull image into the shared Docker daemon (docker-desktop Kubernetes uses it)
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          docker pull $IMAGE || echo "Image pull failed, will retry via kubelet pull policy"
           kubectl apply -f deploy/k8s-staging.yaml --dry-run=client -o yaml | kubectl apply -f -
           kubectl set image deployment/task-api -n task-api-staging task-api=$IMAGE --record
-          kubectl rollout status deployment/task-api -n task-api-staging --timeout=120s
+          # Use the locally pulled image even though manifest says Always
+          kubectl patch deployment task-api -n task-api-staging --type=strategic -p '{"spec":{"template":{"spec":{"containers":[{"name":"task-api","imagePullPolicy":"IfNotPresent"}]}}}}'
+          kubectl rollout status deployment/task-api -n task-api-staging --timeout=180s
           echo "✓ Staging deployment successful"
       - name: Verify staging deployment
         if: steps.check.outputs.has_kubeconfig == 'true'
@@ -189,16 +194,17 @@ jobs:
       - name: Tag as staging
         if: steps.check.outputs.has_kubeconfig == 'true'
         run: |
-          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-          docker tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:staging
-          docker login -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }} ${{ env.REGISTRY }}
-          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:staging
+          IMAGE="${{ env.IMAGE_NAME }}:${{ github.sha }}"
+          docker pull $IMAGE
+          docker tag $IMAGE ${{ env.IMAGE_NAME }}:staging
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          docker push ${{ env.IMAGE_NAME }}:staging
           echo "✓ Tagged and pushed as :staging"
       - name: Simulate staging deployment (no KUBECONFIG secret)
         if: steps.check.outputs.has_kubeconfig == 'false'
         run: |
           echo "⚠️ KUBECONFIG_STAGING secret not set - simulating deployment"
-          echo "IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+          echo "IMAGE: ${{ env.IMAGE_NAME }}:${{ github.sha }}"
           echo "Manifest: deploy/k8s-staging.yaml"
           echo "✓ Staging deployment simulated successfully"
           echo ""
