@@ -73,9 +73,13 @@ docker image inspect task-api --format '{{.Size}}'
 
 ## 5. Actual Time Spent
 
-- **Actual time spent**: ~4 hours (including dependency resolution issues and Docker Compose healthcheck format debugging)
-- **Work deliberately left out**: Image signing with cosign, PrometheusRule alert rules, staging-to-production promotion. These are bonus items; core requirements took priority.
-- **What I would do next with another 60 minutes**: Add a `PrometheusRule` for high error rate (`sum(rate(http_requests_total{status=~"5.."}[1m])) / sum(rate(http_requests_total[1m])) > 0.05`) and demonstrate it firing with a load test.
+- **Actual time spent**: ~5 hours (including dependency resolution, Docker Compose healthcheck debugging, and bonus implementations)
+- **Work deliberately left out**: Image signing with cosign, staging-to-production promotion pipeline. These are optional bonus items beyond the core requirements.
+- **Bonus items completed** (see `monitoring/` directory):
+  - **Alert rules** (`monitoring/alerts.yml`): 6 Prometheus alert rules including HighErrorRate, HighLatency, ServiceDown, ContainerRestart, LowRequestVolume, MemoryPressure
+  - **SLI/SLO definition** (`monitoring/sli-slo.md`): 99.9% availability over 30 days, error budget policy, burn rate alerting examples
+  - **Image scanning in CI** (`.github/workflows/ci.yml`): Trivy scanner integrated, uploads SARIF to GitHub Security tab, warns on CRITICAL vulnerabilities
+- **What I would do next with another 60 minutes**: Implement graceful shutdown with signal handling and demonstrate repeatable validation of in-flight request completion.
 
 ## 6. Use of AI
 
