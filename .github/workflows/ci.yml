@@ -172,32 +172,44 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  deploy:
+  deploy-staging:
     runs-on: ubuntu-latest
     needs: docker-push
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    environment: production
+    environment: staging
     steps:
       - uses: actions/checkout@v4
       - name: Set up kubectl
         uses: azure/setup-kubectl@v3
         with:
           version: 'v1.30.0'
-      - name: Configure kubectl
+      - name: Configure kubectl for staging
         run: |
           mkdir -p $HOME/.kube
-          echo "${{ secrets.KUBECONFIG }}" | base64 -d > $HOME/.kube/config
-      - name: Deploy to Kubernetes
+          echo "${{ secrets.KUBECONFIG_STAGING }}" | base64 -d > $HOME/.kube/config
+      - name: Deploy to staging
         run: |
-          kubectl set image deployment/task-api app=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} --record
-          kubectl rollout status deployment/task-api --timeout=120s
-      - name: Verify deployment
+          IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+          echo "Deploying $IMAGE to staging..."
+          
+          # Create namespace if not exists
+          kubectl apply -f deploy/k8s-staging.yaml --dry-run=client -o yaml | kubectl apply -f -
+          
+          # Update image
+          kubectl set image deployment/task-api -n task-api-staging \
+            task-api=$IMAGE --record
+          
+          kubectl rollout status deployment/task-api -n task-api-staging --timeout=120s
+          echo "✓ Staging deployment successful"
+      - name: Verify staging deployment
         run: |
-          kubectl get pods -l app=task-api
-          kubectl get svc task-api
-      - name: Rollback on failure
-        if: failure()
+          kubectl get pods -n task-api-staging -l app=task-api
+          kubectl get svc -n task-api-staging task-api
+      - name: Tag as staging
         run: |
-          echo "Deployment failed, rolling back..."
-          kubectl rollout undo deployment/task-api
-          kubectl rollout status deployment/task-api --timeout=60s
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          docker tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:staging
+          docker login -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }} ${{ env.REGISTRY }}
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:staging
+          echo "✓ Tagged and pushed as :staging"
