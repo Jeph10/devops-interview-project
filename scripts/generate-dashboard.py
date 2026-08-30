@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
+"""Generate Grafana dashboard JSON for Task API monitoring."""
 import json
+import os
+
+# Get the directory where this script is located
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
 
 panels = []
 
@@ -77,14 +83,13 @@ panels.append({
     "targets": [{
         "datasource": {"type": "prometheus", "uid": "prometheus"},
         "editorMode": "code",
-        "expr": 'sum(rate(http_requests_total{status=~"5.."}[1m])) / sum(rate(http_requests_total[1m]))',
+        "expr": "sum(rate(http_requests_total{status=~\"5..\"}[1m])) / sum(rate(http_requests_total[1m]))",
         "range": True,
         "refId": "A"
     }],
     "title": "Error Rate (5xx)",
     "type": "stat"
 })
-
 
 # Panel 3: Latency Percentiles
 panels.append({
@@ -138,6 +143,20 @@ panels.append({
             "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[1m])) by (le))",
             "legendFormat": "P95",
             "range": True,
+            "refId": "B"
+        },
+        {
+            "datasource": {"type": "prometheus", "uid": "prometheus"},
+            "editorMode": "code",
+            "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket[1m])) by (le))",
+            "legendFormat": "P99",
+            "range": True,
+            "refId": "C"
+        }
+    ],
+    "title": "Latency Percentiles (P50/P95/P99)",
+    "type": "timeseries"
+})
 
 # Panel 4: Total Tasks
 panels.append({
@@ -165,6 +184,11 @@ panels.append({
         "editorMode": "code",
         "expr": "task_api_tasks_total",
         "range": True,
+        "refId": "A"
+    }],
+    "title": "Total Tasks",
+    "type": "stat"
+})
 
 # Panel 5: Completed Tasks
 panels.append({
@@ -221,30 +245,12 @@ dashboard = {
     "weekStart": ""
 }
 
-output_path = "/Users/johnsonjephthah/projects/devops-interview-project/monitoring/grafana/provisioning/dashboards/task-api-dashboard.json"
+# Output to the correct location in the project
+output_dir = os.path.join(PROJECT_ROOT, "monitoring", "grafana", "provisioning", "dashboards")
+os.makedirs(output_dir, exist_ok=True)
+output_path = os.path.join(output_dir, "task-api-dashboard.json")
+
 with open(output_path, "w") as f:
     json.dump(dashboard, f, indent=2)
 
 print(f"Dashboard JSON written to {output_path}")
-
-        "refId": "A"
-    }],
-    "title": "Total Tasks",
-    "type": "stat"
-})
-
-            "refId": "B"
-        },
-        {
-            "datasource": {"type": "prometheus", "uid": "prometheus"},
-            "editorMode": "code",
-            "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket[1m])) by (le))",
-            "legendFormat": "P99",
-            "range": True,
-            "refId": "C"
-        }
-    ],
-    "title": "Latency Percentiles (P50/P95/P99)",
-    "type": "timeseries"
-})
-
