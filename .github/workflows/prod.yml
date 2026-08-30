@@ -1,3 +1,4 @@
+
 # Staging to Production Promotion Pipeline
 # This workflow handles the promotion of a specific image from staging to production.
 # It requires manual approval and tracks the promotion in a deployment log.
