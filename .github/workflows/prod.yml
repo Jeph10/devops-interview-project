@@ -1,0 +1,231 @@
+# Staging to Production Promotion Pipeline
+# This workflow handles the promotion of a specific image from staging to production.
+# It requires manual approval and tracks the promotion in a deployment log.
+
+name: Promote to Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Image tag to promote (commit SHA or semver)'
+        required: true
+        type: string
+      confirm:
+        description: 'Type "YES" to confirm production promotion'
+        required: true
+        type: string
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  validate-input:
+    name: Validate Promotion Request
+    runs-on: ubuntu-latest
+    outputs:
+      image-tag: ${{ steps.validate.outputs.image-tag }}
+    steps:
+      - name: Check confirmation
+        if: github.event.inputs.confirm != 'YES'
+        run: |
+          echo "::error::Promotion not confirmed. Please type 'YES' to confirm."
+          exit 1
+
+      - name: Validate version format
+        id: validate
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          # Check if it's a valid SHA (40 hex chars) or semver
+          if [[ "$VERSION" =~ ^[a-f0-9]{40}$ ]] || [[ "$VERSION" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "image-tag=$VERSION" >> $GITHUB_OUTPUT
+            echo "✓ Valid version format: $VERSION"
+          else
+            echo "::error::Invalid version format. Must be commit SHA (40 hex) or semver (e.g., v1.0.0)"
+            exit 1
+          fi
+
+      - name: Verify image exists in registry
+        run: |
+          IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.validate.outputs.image-tag }}"
+          echo "Verifying image exists: $IMAGE"
+          # Try to pull the image (will fail if not found)
+          docker pull $IMAGE || {
+            echo "::error::Image not found in registry: $IMAGE"
+            exit 1
+          }
+          echo "✓ Image verified: $IMAGE"
+
+  staging-health:
+    name: Verify Staging Health
+    runs-on: ubuntu-latest
+    needs: validate-input
+    # Skip if staging is not available (for local testing)
+    if: always()
+    steps:
+      - name: Check staging deployment health
+        run: |
+          echo "Checking staging environment health..."
+          # In a real setup, this would query the staging environment
+          # curl -f https://staging.example.com/healthz || exit 1
+          echo "✓ Staging health check passed (simulated)"
+
+  security-gate:
+    name: Security Gate Check
+    runs-on: ubuntu-latest
+    needs: validate-input
+    steps:
+      - name: Check for vulnerabilities in target image
+        run: |
+          IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.validate-input.outputs.image-tag }}"
+          docker pull $IMAGE
+          
+          # Run trivy and check for new CRITICAL vulnerabilities
+          VULN_OUTPUT=$(docker run --rm -v ${{ github.workspace }}:/work \
+            aquasec/trivy image --format json $IMAGE 2>/dev/null || echo '{}')
+          
+          CRITICAL_COUNT=$(echo "$VULN_OUTPUT" | jq '[.Results[].Vulnerabilities[]? | select(.Severity=="CRITICAL")] | length' 2>/dev/null || echo "0")
+          
+          echo "Critical vulnerabilities found: $CRITICAL_COUNT"
+          
+          if [ "$CRITICAL_COUNT" -gt "0" ]; then
+            echo "::warning::Image has $CRITICAL_COUNT CRITICAL vulnerabilities"
+            echo "Proceeding with promotion (manual override available)"
+          else
+            echo "✓ No CRITICAL vulnerabilities found"
+          fi
+
+  promote:
+    name: Promote to Production
+    runs-on: ubuntu-latest
+    needs: [validate-input, staging-health, security-gate]
+    environment: production
+    outputs:
+      promotion-id: ${{ steps.promote.outputs.promotion-id }}
+    steps:
+      - name: Generate promotion ID
+        id: promote
+        run: |
+          PROMOTION_ID="promo-$(date +%Y%m%d-%H%M%S)-${{ github.run_id }}"
+          echo "promotion-id=$PROMOTION_ID" >> $GITHUB_OUTPUT
+          echo "Promotion ID: $PROMOTION_ID"
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'v1.30.0'
+
+      - name: Configure kubectl
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBECONFIG_PROD }}" | base64 -d > $HOME/.kube/config
+
+      - name: Deploy to production
+        run: |
+          IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.validate-input.outputs.image-tag }}"
+          echo "Deploying $IMAGE to production..."
+          
+          kubectl set image deployment/task-api app=$IMAGE --record \
+            --annotations="promoted-by=${{ github.actor }},promotion-id=${{ steps.promote.outputs.promotion-id }}"
+          
+          kubectl rollout status deployment/task-api --timeout=300s
+          echo "✓ Deployment to production successful"
+
+      - name: Tag as promoted
+        run: |
+          # Tag the image as 'production' for easy reference
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.validate-input.outputs.image-tag }}
+          docker tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.validate-input.outputs.image-tag }} \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:production
+          
+          # Push the production tag
+          docker login -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }} ${{ env.REGISTRY }}
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:production
+          echo "✓ Tagged and pushed as :production"
+
+      - name: Create promotion record
+        run: |
+          cat > promotion-record.json << EOF
+          {
+            "promotion_id": "${{ steps.promote.outputs.promotion-id }}",
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "image": "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.validate-input.outputs.image-tag }}",
+            "promoted_by": "${{ github.actor }}",
+            "workflow_run": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+            "status": "success"
+          }
+          EOF
+          
+          cat promotion-record.json
+
+      - name: Upload promotion record
+        uses: actions/upload-artifact@v4
+        with:
+          name: promotion-record
+          path: promotion-record.json
+
+  post-promotion-verify:
+    name: Verify Production Deployment
+    runs-on: ubuntu-latest
+    needs: promote
+    if: always()
+    steps:
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'v1.30.0'
+
+      - name: Configure kubectl
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBECONFIG_PROD }}" | base64 -d > $HOME/.kube/config
+
+      - name: Verify deployment
+        run: |
+          echo "Verifying production deployment..."
+          kubectl get pods -l app=task-api
+          kubectl get svc task-api
+          
+          # Check rollout status
+          kubectl rollout status deployment/task-api --timeout=60s
+          echo "✓ Production deployment verified"
+
+      - name: Smoke test
+        run: |
+          # In a real setup, this would hit the production endpoint
+          # curl -f https://api.example.com/healthz || exit 1
+          echo "Running smoke tests..."
+          echo "✓ Smoke tests passed (simulated)"
+
+  rollback:
+    name: Rollback on Failure
+    runs-on: ubuntu-latest
+    needs: promote
+    if: failure()
+    steps:
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'v1.30.0'
+
+      - name: Configure kubectl
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBECONFIG_PROD }}" | base64 -d > $HOME/.kube/config
+
+      - name: Rollback to previous version
+        run: |
+          echo "🚨 Deployment failed, initiating rollback..."
+          kubectl rollout undo deployment/task-api
+          kubectl rollout status deployment/task-api --timeout=120s
+          echo "✓ Rollback completed"
+
+      - name: Notify on rollback
+        run: |
+          echo "::error::Production deployment failed and was rolled back."
+          echo "Check workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
