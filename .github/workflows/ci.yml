@@ -89,7 +89,8 @@ jobs:
         run: |
           docker build -t task-api:${{ github.sha }} .
           docker tag task-api:${{ github.sha }} task-api:latest
-          echo "image-digest=$(docker inspect --format='{{index .RepoDigests 0}}' task-api:${{ github.sha }}')" >> $GITHUB_OUTPUT
+          DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' task-api:${{ github.sha }} || echo "")
+          echo "image-digest=$DIGEST" >> $GITHUB_OUTPUT
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
