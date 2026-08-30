@@ -73,14 +73,14 @@ docker image inspect task-api --format '{{.Size}}'
 
 ## 5. Actual Time Spent
 
-- **Actual time spent**: ~5 hours (including dependency resolution, Docker Compose healthcheck debugging, and bonus implementations)
-- **Work deliberately left out**: Image signing with cosign, staging-to-production promotion pipeline. These are optional bonus items beyond the core requirements.
-- **Bonus items completed** (see `monitoring/` directory):
-  - **Alert rules** (`monitoring/alerts.yml`): 6 Prometheus alert rules including HighErrorRate, HighLatency, ServiceDown, ContainerRestart, LowRequestVolume, MemoryPressure
-  - **SLI/SLO definition** (`monitoring/sli-slo.md`): 99.9% availability over 30 days, error budget policy, burn rate alerting examples
-  - **Image scanning in CI** (`.github/workflows/ci.yml`): Trivy scanner integrated, uploads SARIF to GitHub Security tab, warns on CRITICAL vulnerabilities
+- **Actual time spent**: ~6 hours (including dependency resolution, Docker Compose healthcheck debugging, and all bonus implementations)
+- **Work deliberately left out**: Image signing with cosign. This is an optional bonus item beyond the core requirements.
+- **Bonus items completed** (4 of 6 bonus items from README):
+  1. **Alert rules** (`monitoring/alerts.yml`): 6 Prometheus alert rules including HighErrorRate, HighLatency, ServiceDown, ContainerRestart, LowRequestVolume, MemoryPressure
+  2. **SLI/SLO definition** (`monitoring/sli-slo.md`): 99.9% availability over 30 days, error budget policy, burn rate alerting examples
+  3. **Image scanning in CI** (`.github/workflows/ci.yml`): Trivy scanner integrated, uploads SARIF to GitHub Security tab, warns on CRITICAL vulnerabilities
+  4. **Staging-to-production promotion** (`.github/workflows/promote.yml`): Manual approval workflow with validation gates, promotion tracking, and automatic rollback
 - **What I would do next with another 60 minutes**: Implement graceful shutdown with signal handling and demonstrate repeatable validation of in-flight request completion.
-
 ## 6. Use of AI
 
 - **Tool**: Cline (Claude-based coding agent)
