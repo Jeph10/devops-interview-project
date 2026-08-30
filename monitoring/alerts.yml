@@ -1,0 +1,81 @@
+# Prometheus Alert Rules for Task API
+# These rules define alerts for critical conditions that require on-call attention.
+
+groups:
+  - name: task-api-alerts
+    interval: 30s
+    rules:
+      # High Error Rate Alert
+      # Fires when 5xx error rate exceeds 5% for 2 minutes
+      - alert: TaskAPIHighErrorRate
+        expr: sum(rate(http_requests_total{status=~"5.."}[1m])) / sum(rate(http_requests_total[1m])) > 0.05
+        for: 2m
+        labels:
+          severity: critical
+          service: task-api
+        annotations:
+          summary: "High error rate detected in Task API"
+          description: "Error rate is {{ $value | humanizePercentage }} (threshold: 5%)"
+          runbook_url: "https://github.com/your-org/task-api/blob/main/docs/runbooks/high-error-rate.md"
+
+      # High Latency Alert (P99)
+      # Fires when P99 latency exceeds 1 second for 5 minutes
+      - alert: TaskAPIHighLatency
+        expr: histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket[1m])) by (le)) > 1
+        for: 5m
+        labels:
+          severity: warning
+          service: task-api
+        annotations:
+          summary: "High latency detected in Task API"
+          description: "P99 latency is {{ $value | humanizeDuration }} (threshold: 1s)"
+          runbook_url: "https://github.com/your-org/task-api/blob/main/docs/runbooks/high-latency.md"
+
+      # Service Down Alert
+      # Fires when the target is down for 1 minute
+      - alert: TaskAPIDown
+        expr: up{job="task-api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: task-api
+        annotations:
+          summary: "Task API service is down"
+          description: "The task-api target has been down for more than 1 minute"
+          runbook_url: "https://github.com/your-org/task-api/blob/main/docs/runbooks/service-down.md"
+
+      # Container Restart Alert
+      # Fires when container restarts are detected (requires kube-state-metrics)
+      - alert: TaskAPIContainerRestart
+        expr: increase(kube_pod_container_status_restarts_total{container="task-api"}[1h]) > 0
+        for: 5m
+        labels:
+          severity: warning
+          service: task-api
+        annotations:
+          summary: "Task API container has restarted"
+          description: "Container has restarted {{ $value }} times in the last hour"
+
+      # Low Request Volume Alert
+      # Fires when request rate drops below expected threshold (adjust based on baseline)
+      - alert: TaskAPILowRequestVolume
+        expr: sum(rate(http_requests_total[5m])) < 0.1
+        for: 10m
+        labels:
+          severity: warning
+          service: task-api
+        annotations:
+          summary: "Unusually low request volume in Task API"
+          description: "Request rate is {{ $value }} req/s, which is below normal baseline"
+
+      # Memory Pressure Alert (requires container metrics)
+      # Fires when container memory usage exceeds 80% of limit
+      - alert: TaskAPIMemoryPressure
+        expr: container_memory_usage_bytes{container="task-api"} / container_spec_memory_limit_bytes{container="task-api"} > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          service: task-api
+        annotations:
+          summary: "Task API container memory pressure"
+          description: "Memory usage is {{ $value | humanizePercentage }} of limit"
