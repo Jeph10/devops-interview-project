@@ -19,7 +19,7 @@ concurrency:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ghcr.io/${{ github.actor }}/devops-interview-project
+  IMAGE_NAME: ghcr.io/jeph10/devops-interview-project
 
 jobs:
   lint:
