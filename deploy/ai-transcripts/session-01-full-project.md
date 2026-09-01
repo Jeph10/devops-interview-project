@@ -281,54 +281,7 @@
 
 ---
 
-## Prompt 24: Trigger GitHub Action & Connect to Cluster
-**User:** "trigger my github action ci.yml and connect to my cluster"
-
-**AI Response:**
-- Identified problem: local cluster (docker-desktop) unreachable from GitHub-hosted runners
-- Solution: Registered self-hosted runner (mac-mini-1) with labels [self-hosted, kube]
-- Added KUBECONFIG_STAGING secret via GitHub API (encrypted with libsodium)
-- Updated ci.yml: deploy-staging runs on [self-hosted, kube], fixed ghcr.io double-prefix bug, added imagePullPolicy patch
-- Pushed commit e35bd33 → triggered Run #33333382514
-- Pipeline completed SUCCESS: all 6 jobs green
-- deploy-staging ran on mac-mini-1, deployed to task-api-staging namespace (2/2 pods Running)
-- Verified: image traceable to commit SHA
-
----
-
-## Prompt 25: Add Verification to workflow.md
-**User:** "add verification to the workflow.md and optimize the documention"
-
-**AI Response:**
-- Rewrote .github/workflows/workflow.md (308 lines)
-- Fixed inaccuracies: flow diagram now shows docker-build-and-scan as one job (not separate)
-- Added comprehensive "Verification & Validation Guide" with 6 sections:
-  1. Verify before push (local)
-  2. Verify each pipeline stage (GitHub Actions)
-  3. Verify staging deployment (cluster)
-  4. Verify production promotion (cluster)
-  5. Reference validated run (#33333382514)
-  6. Verification failure playbook
-- Added runner details, KUBECONFIG check logic, imagePullPolicy patch documentation
-- Note: initial heredoc write got mangled by shell integration; rebuilt via editor tool in 3 chunks
-
----
-
-## Prompt 26: Shutdown
-**User:** "how do i shutdown my hosted runner and docker i am done with this exercise" → chose "Full shutdown"
-
-**AI Response:**
-- Stopped runner: pkill -INT Runner.Listener
-- Deregistered runner from GitHub (confirmed: 0 runners registered)
-- Deleted K8s namespaces (task-api-staging, task-api-production)
-- Deleted default deployment/service, nginx IngressClass
-- docker compose down -v (removed containers, volumes, network)
-- Quit Docker Desktop via osascript
-- Verified: Docker Desktop QUIT, 0 runner processes, no task-api resources left
-
----
-
-## Prompt 27: Create AI Transcript
+## Prompt 24: Create AI Transcript
 **User:** "create AI Transcript Record follow the below [instructions]"
 
 **AI Response:** (this document)
