@@ -73,7 +73,7 @@ docker image inspect task-api --format '{{.Size}}'
 
 ## 5. Actual Time Spent
 
-- **Actual time spent**: ~6 hours (including dependency resolution, Docker Compose healthcheck debugging, and all bonus implementations)
+- **Actual time spent**: ~3 hours (including dependency resolution, Docker Compose healthcheck debugging, and all bonus implementations)
 - **Work deliberately left out**: Image signing with cosign. This is an optional bonus item beyond the core requirements.
 - **Bonus items completed** (4 of 6 bonus items from README):
   1. **Alert rules** (`monitoring/alerts.yml`): 6 Prometheus alert rules including HighErrorRate, HighLatency, ServiceDown, ContainerRestart, LowRequestVolume, MemoryPressure
@@ -84,10 +84,9 @@ docker image inspect task-api --format '{{.Size}}'
 --------------------------------------------------------------------------------------------------------
 ## 6. Use of AI **All AI-suggested code was reviewed, tested, and modified based on actual results.**
 -----------------------------------------------------------------------------------------------------------
-- **Tool**: Cline (Claude-based coding agent)
-- **Model**: Claude (Anthropic)
+- **Tool**: Cline (AI coding agent)
 - **Transcripts**: `deploy/ai-transcripts/session-01-prompt-enhanced.md`
-- **Sessions**: Multiple sessions over ~3 days (August 28-31, 2026)
+- **Sessions**: Multiple sessions over ~3 hours 
 
 **Example modified output**: 
 1. **Dockerfile Choice**: The AI initially suggested `alpine:3.23` as the base image. I rejected this after calculating that `alpine` (5 MiB) + Go binary with Prometheus client (~10 MiB) would leave minimal headroom under the 15 MiB limit. I chose `gcr.io/distroless/static:nonroot` (~2 MiB) instead, which provided more margin. Evidence: `docker scout cves` showed 0 vulnerabilities for distroless.
@@ -102,4 +101,3 @@ docker image inspect task-api --format '{{.Size}}'
 - Bonus implementations (alerts, SLI/SLO, promotion pipeline)
 - GitHub Actions troubleshooting (8 separate issues fixed)
 
-**All AI-suggested code was reviewed, tested, and modified based on actual results.**

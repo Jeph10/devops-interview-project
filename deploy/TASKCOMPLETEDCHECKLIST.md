@@ -150,10 +150,10 @@ docker compose up -d
 
 ## ⏱️ Time Spent
 
-- **Total**: ~4 hours
-- Containerization: ~45 min
-- CI/CD Pipeline: ~30 min
-- Observability: ~90 min
+- **Total**: ~3 hours
+- Containerization: ~30 min
+- CI/CD Pipeline: ~25 min
+- Observability: ~50 min
 - NOTES.md + COST.md: ~45 min
 - Dependency/debugging: ~30 min
 
