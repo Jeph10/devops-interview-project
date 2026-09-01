@@ -81,8 +81,25 @@ docker image inspect task-api --format '{{.Size}}'
   3. **Image scanning in CI** (`.github/workflows/ci.yml`): Trivy scanner integrated, uploads SARIF to GitHub Security tab, warns on CRITICAL vulnerabilities
   4. **Staging-to-production promotion** (`.github/workflows/promote.yml`): Manual approval workflow with validation gates, promotion tracking, and automatic rollback
 - **What I would do next with another 60 minutes**: Implement graceful shutdown with signal handling and demonstrate repeatable validation of in-flight request completion.
-## 6. Use of AI
-
+--------------------------------------------------------------------------------------------------------
+## 6. Use of AI **All AI-suggested code was reviewed, tested, and modified based on actual results.**
+-----------------------------------------------------------------------------------------------------------
 - **Tool**: Cline (Claude-based coding agent)
-- **Transcripts**: `deploy/ai-transcripts/session-01-containerization.md` (to be committed)
-- **Example modified output**: The AI initially suggested `alpine:3.23` as the base image. I rejected this after calculating that `alpine` (5 MiB) + Go binary with Prometheus client (~10 MiB) would leave minimal headroom under the 15 MiB limit. I chose `distroless/static:nonroot` (~2 MiB) instead, which provided more margin. Evidence: `docker scout cves` showed 0 vulnerabilities for distroless vs potential CVEs in Alpine packages.
+- **Model**: Claude (Anthropic)
+- **Transcripts**: `deploy/ai-transcripts/session-01-prompt-enhanced.md`
+- **Sessions**: Multiple sessions over ~3 days (August 28-31, 2026)
+
+**Example modified output**: 
+1. **Dockerfile Choice**: The AI initially suggested `alpine:3.23` as the base image. I rejected this after calculating that `alpine` (5 MiB) + Go binary with Prometheus client (~10 MiB) would leave minimal headroom under the 15 MiB limit. I chose `gcr.io/distroless/static:nonroot` (~2 MiB) instead, which provided more margin. Evidence: `docker scout cves` showed 0 vulnerabilities for distroless.
+
+2. **CI/CD Job Structure**: The AI created separate `docker-build` and `scan` jobs. I combined them into `docker-build-and-scan` because GitHub Actions jobs run on separate runners, and the image built in one job was not accessible in the other.
+
+3. **Prompt Engineering**: I iteratively improved the AI prompts, adding troubleshooting guidance, expected outputs, and time estimates. The final `prompt-enhanced.md` includes 13 detailed prompts with validation steps.
+
+**Tasks where AI provided significant help**:
+- Repository analysis and workflow documentation
+- Bug fixing (generate-dashboard.py had severe syntax errors)
+- Bonus implementations (alerts, SLI/SLO, promotion pipeline)
+- GitHub Actions troubleshooting (8 separate issues fixed)
+
+**All AI-suggested code was reviewed, tested, and modified based on actual results.**
